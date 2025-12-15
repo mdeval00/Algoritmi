@@ -1,0 +1,314 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+typedef struct Node {
+    int data;
+    int priority;
+    struct Node* next;
+} Node;
+
+int random_broj() {
+    return rand() % 91+10;
+}
+
+int random_prioritet() {
+    return rand() % 5 + 1;
+}
+
+Node* push(Node* top) {
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    new_node->data = random_broj();
+    new_node->next = top;
+    printf("Push: %d\n", new_node->data);
+    return new_node;
+}
+
+Node* pop(Node* top) {
+    Node* temp = top;
+    printf("Pop: %d\n", top->data);
+    top = top->next;
+    free(temp);
+    return top;
+}
+
+Node* enqueue(Node* front) {
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    new_node->data = random_broj();
+    new_node->next = NULL;
+    printf("Enqueue: %d\n", new_node->data);
+
+    if (front == NULL) {
+        return new_node;
+    }
+
+    Node* current = front;
+    while (current->next != NULL) {
+        current = current->next;
+    }
+
+    current->next = new_node;
+
+    return front;
+}
+
+Node* dequeue(Node* front) {
+    if (front == NULL) {
+        printf("Red je prazan!\n");
+        return NULL;
+    }
+
+    Node* temp = front;
+    printf("Dequeue: %d\n", temp->data);
+
+    front = front->next;
+
+    free(temp);
+    return front;
+}
+
+void printList(Node* head) {
+    Node* current = head;
+    while (current != NULL) {
+        printf("%d -> ", current->data);
+        current = current->next;
+    }
+    printf("NULL\n");
+}
+
+void sesti_zad() {
+
+    srand(time(NULL));
+
+    printf("Primjer stoga\n\n");
+    Node* stog = NULL;
+
+    stog = push(stog);
+    stog = push(stog);
+    stog = push(stog);
+    printList(stog);
+
+    stog = pop(stog);
+    stog = pop(stog);
+    printList(stog);
+
+    printf("\nPrimjer reda\n\n");
+    Node* front = NULL;
+
+    front = enqueue(front);
+    front = enqueue(front);
+    front = enqueue(front);
+    printList(front);
+
+    front = dequeue(front);
+    front = dequeue(front);
+    printList(front);
+
+}
+typedef struct Stack {
+    Node* top;
+    int capacity;
+    int size;
+} Stack;
+
+Stack* createStack(int capacity) {
+    Stack* stack = (Stack*)malloc(sizeof(Stack));
+    if (stack == NULL) {
+        printf("Greska pri alokaciji memorije\n");
+        exit(1);
+    }
+    stack->top = NULL;
+    stack->capacity = capacity;
+    stack->size = 0;
+    return stack;
+}
+
+
+int push_7(Stack* stack) {
+    if (stack->size >= stack->capacity) {
+        printf("Greska: Stog je pun\n");
+        return 0;
+    }
+
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    new_node->data = random_broj();
+    new_node->next = stack->top;
+    stack->top = new_node;
+    stack->size++;
+
+    printf("Push: %d (kapacitet stoga: %d/%d)\n", new_node->data, stack->size, stack->capacity);
+    return 1;
+}
+
+int pop_7(Stack* stack) {
+    if (stack->size == 0) {
+        printf("Greska: Stog je prazan\n");
+        return -1;
+    }
+
+    Node* temp = stack->top;
+    int popped_value = temp->data;
+
+    stack->top = stack->top->next;
+    stack->size--;
+
+    printf("Pop: %d (kapacitet stoga: %d/%d)\n", popped_value, stack->size, stack->capacity);
+    free(temp);
+    return popped_value;
+}
+
+void printStack(Stack* stack) {
+    if (stack->size == 0) {
+        printf("Stog je prazan\n");
+        return;
+    }
+
+    printf("Sadrzaj stoga:\n", stack->size, stack->capacity);
+    Node* current = stack->top;
+    while (current != NULL) {
+        printf("%d ", current->data);
+        current = current->next;
+    }
+    printf("NULL\n");
+}
+
+void freeStack(Stack* stack) {
+    while (!(stack->size == 0)) {
+        pop_7(stack);
+    }
+    free(stack);
+    printf("Stog je izbrisan\n");
+}
+
+Node* enqueue_priority(Node* front) {
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    new_node->data = random_broj();
+    new_node->priority = random_prioritet();
+    new_node->next = NULL;
+
+    printf("Enqueue: %d (%d)\n", new_node->data, new_node->priority);
+
+    if (front == NULL || new_node->priority < front->priority) {
+        new_node->next = front;
+        return new_node;
+    }
+
+    Node* current = front;
+    while (current->next != NULL && current->next->priority <= new_node->priority) {
+        current = current->next;
+    }
+
+    new_node->next = current->next;
+    current->next = new_node;
+
+    return front;
+}
+
+Node* dequeue_priority(Node* front) {
+    if (front == NULL) {
+        printf("Red je prazan!\n");
+        return NULL;
+    }
+
+    Node* temp = front;
+    printf("Dequeue: %d (%d)\n", front->data, front->priority);
+
+    front = front->next;
+    free(temp);
+
+    return front;
+}
+
+void print_priority_queue(Node* front) {
+    if (front == NULL) {
+        printf("Red je prazan\n");
+        return;
+    }
+
+    Node* current = front;
+    printf("Red s prioritetom: ");
+    while (current != NULL) {
+        printf("%d(%d) ", current->data, current->priority);
+        current = current->next;
+    }
+    printf("NULL\n");
+}
+
+void sedmi_zad() {
+
+
+    printf("A) Stog s kapacitetom\n\n");
+
+
+    int kapacitet;
+
+    printf("Unesite maksimalni kapacitet stoga: ");
+    scanf("%d", &kapacitet);
+
+    Stack* stog = createStack(kapacitet);
+
+    srand(time(NULL));
+
+    printf("\n");
+    for (int i = 0; i < kapacitet + 2; i++) {
+        push_7(stog);
+    }
+    printStack(stog);
+
+    printf("\n");
+    for (int i = 0; i < 3; i++) {
+        pop_7(stog);
+    }
+    printStack(stog);
+
+    printf("\n");
+    for (int i = 0; i < 2; i++) {
+        push_7(stog);
+    }
+    printStack(stog);
+
+    freeStack(stog);
+
+    printf("\nB) red s prioritetom\n\n");
+
+    Node* front = NULL;
+
+    front = enqueue_priority(front);
+    front = enqueue_priority(front);
+    front = enqueue_priority(front);
+    front = enqueue_priority(front);
+    front = enqueue_priority(front);
+    front = enqueue_priority(front);
+    front = enqueue_priority(front);
+    front = enqueue_priority(front);
+    front = enqueue_priority(front);
+    front = enqueue_priority(front);
+
+    printf("\n\n");
+    print_priority_queue(front);
+
+    front = dequeue_priority(front);
+    front = dequeue_priority(front);
+    front = dequeue_priority(front);
+    front = dequeue_priority(front);
+    front = dequeue_priority(front);
+    
+
+    printf("\n\n");
+    print_priority_queue(front);
+
+    while (front != NULL) {
+        Node* temp = front;
+        front = front->next;
+        free(temp);
+    }
+
+}
+
+int main() {
+    
+    //sesti_zad();
+    sedmi_zad();
+    return 0;
+}
