@@ -10,7 +10,7 @@ typedef struct Node {
 } Node;
 
 int random_broj() {
-    return rand() % 91+10;
+    return rand() % 91 + 10;
 }
 
 int random_prioritet() {
@@ -31,6 +31,14 @@ Node* pop(Node* top) {
     top = top->next;
     free(temp);
     return top;
+}
+
+void free_stack(Node* stog) {
+    while (stog != NULL) {
+        Node* temp = stog;
+        stog = stog->next;
+        free(temp);
+    }
 }
 
 Node* enqueue(Node* front) {
@@ -173,7 +181,7 @@ void printStack(Stack* stack) {
     printf("NULL\n");
 }
 
-void freeStack(Stack* stack) {
+void freeStack2(Stack* stack) {
     while (!(stack->size == 0)) {
         pop_7(stack);
     }
@@ -268,7 +276,7 @@ void sedmi_zad() {
     }
     printStack(stog);
 
-    freeStack(stog);
+    freeStack2(stog);
 
     printf("\nB) red s prioritetom\n\n");
 
@@ -293,7 +301,7 @@ void sedmi_zad() {
     front = dequeue_priority(front);
     front = dequeue_priority(front);
     front = dequeue_priority(front);
-    
+
 
     printf("\n\n");
     print_priority_queue(front);
@@ -307,7 +315,7 @@ void sedmi_zad() {
 }
 
 int main() {
-    
+
     //sesti_zad();
     sedmi_zad();
     return 0;
