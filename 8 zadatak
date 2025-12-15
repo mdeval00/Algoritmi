@@ -1,0 +1,165 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+typedef struct Node {
+    int data;
+    struct Node* next;
+} Node;
+
+Node* push(Node* top, int value) {
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    new_node->data = value;
+    new_node->next = top;
+    return new_node;
+}
+
+Node* pop(Node* top, int* value) {
+    Node* temp = top;
+    *value = top->data;
+    top = top->next;
+    free(temp);
+    return top;
+}
+
+int checkPostfix(const char* izraz, int* result) {
+    Node* stack = NULL;
+    int i = 0;
+
+    while (izraz[i] != '\0') {
+
+        if (izraz[i] == ' ' || izraz[i] == '\t') {
+            i++;
+            continue;
+        }
+
+
+        if (isdigit(izraz[i])) {
+            int number = 0;
+
+            while (isdigit(izraz[i])) {
+                number = number * 10 + (izraz[i] - '0');
+                i++;
+            }
+            stack = push(stack, number);
+            continue;
+        }
+
+        if (izraz[i] == '+' || izraz[i] == '-' || izraz[i] == '*' || izraz[i] == '/') {
+            if (stack == NULL || stack->next == NULL) {
+                printf("Krivo postavljen izraz\n");
+                return 0;
+            }
+
+            int a, b;
+            stack = pop(stack, &b);
+            stack = pop(stack, &a);
+            int result;
+
+            switch (izraz[i]) {
+            case '+':
+                result = a + b;
+                break;
+            case '-':
+                result = a - b;
+                break;
+            case '*':
+                result = a * b;
+                break;
+            case '/':
+                if (b == 0) {
+                    printf("Greska: dijeljenje s 0\n");
+                    return 0;
+                }
+                result = a / b;
+                break;
+            }
+
+            stack = push(stack, result);
+            i++;
+            continue;
+        }
+
+        printf("Nepodrzan znak: %c\n", izraz[i]);
+        return 0;
+    }
+
+    int finalResult;
+    stack = pop(stack, &finalResult);
+
+    *result = finalResult;
+    return 1;
+}
+
+char* readFromFile(const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        printf("Greska pri otvaranju datoteke\n");
+        return NULL;
+    }
+
+    char buffer[1024];
+    int capacity = 1024;
+    int size = 0;
+    char* izraz = (char*)malloc(capacity);
+
+    if (izraz == NULL) {
+        printf("Greska pri alokaciji memorije\n");
+        fclose(file);
+        return NULL;
+    }
+
+    while (fgets(buffer, sizeof(buffer), file) != NULL) {
+        int buffer_len = 0;
+        while (buffer[buffer_len] != '\0') {
+            buffer_len++;
+        }
+
+        if (size + buffer_len + 1 > capacity) {
+            capacity = size + buffer_len + 1;
+            char* new_izraz = (char*)realloc(izraz, capacity);
+            izraz = new_izraz;
+        }
+
+        for (int j = 0; j < buffer_len; j++) {
+            izraz[size++] = buffer[j];
+        }
+    }
+    izraz[size] = '\0';
+
+    fclose(file);
+
+    if (size > 0 && izraz[size - 1] == '\n') {
+        izraz[size - 1] = '\0';
+    }
+
+    return izraz;
+}
+
+int main() {
+    char filename[100];
+    printf("Unesi ime datoteke: ");
+    scanf("%s", filename);
+
+    char* izraz = readFromFile(filename);
+    if (izraz == NULL) {
+        return 1;
+    }
+
+    printf("Postfix izraz: %s\n", izraz);
+
+    int result;
+    if (checkPostfix(izraz, &result)) {
+        printf("Rezultat: %d\n", result);
+    }
+    else {
+        printf("Greska tijekom provjere izraza\n");
+        free(izraz);
+        return 1;
+    }
+
+    free(izraz);
+
+    return 0;
+}
