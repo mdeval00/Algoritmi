@@ -1,0 +1,284 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+
+typedef struct Osoba{
+    char name[256];
+    char surname[256];
+    int yearOfB;
+    struct Osoba* next;
+} Osoba;
+
+Osoba* addToBeginning(Osoba* head, char* name, char* surname, int yearOfB) {
+    Osoba* newOsoba = (Osoba*)malloc(sizeof(Osoba));
+    if (newOsoba == NULL) {
+        printf("Greska pri alokaciji memorije!\n");
+        return head;
+    }
+
+    strcpy(newOsoba->name, name);
+    strcpy(newOsoba->surname, surname);
+    newOsoba->yearOfB = yearOfB;
+    newOsoba->next = head;
+
+    return newOsoba;
+}
+
+void printList(Osoba* head) {
+    if (head == NULL) {
+        printf("Lista je prazna.\n");
+        return;
+    }
+
+    Osoba* current = head;
+    int counter = 1;
+
+    while (current != NULL) {
+        printf("%d. Ime: %s, Prezime: %s, Godina rodenja: %d\n",
+            counter, current->name, current->surname, current->yearOfB);
+        current = current->next;
+        counter++;
+    }
+    printf("\n\n");
+}
+
+Osoba* addToEnd(Osoba* head, char* name, char* surname, int yearOfB) {
+    Osoba* newOsoba = (Osoba*)malloc(sizeof(Osoba));
+    if (newOsoba == NULL) {
+        printf("Greska pri alokaciji memorije!\n");
+        return head;
+    }
+
+    strcpy(newOsoba->name, name);
+    strcpy(newOsoba->surname, surname);
+    newOsoba->yearOfB = yearOfB;
+    newOsoba->next = NULL;
+
+    if (head == NULL) {
+        return newOsoba;
+    }
+
+    Osoba* current = head;
+    while (current->next != NULL) {
+        current = current->next;
+    }
+
+    current->next = newOsoba;
+    return head;
+}
+
+Osoba* findElement(Osoba* head, char* surname) {
+    Osoba* current = head;
+
+    while (current != NULL) {
+        if (strcmp(current->surname, surname) == 0) {
+            return current;
+        }
+        current = current->next;
+    }
+
+    return NULL;
+}
+
+Osoba* deleteElement(Osoba* head, char* surname) {
+    if (head == NULL) {
+        printf("List je prazna.\n");
+        return NULL;
+    }
+
+    if (strcmp(head->surname, surname) == 0) {
+        Osoba* temp = head->next;
+        free(head);
+        printf("Osoba '%s' izbrisana.\n", surname);
+        return temp;
+    }
+
+    Osoba* current = head;
+    Osoba* previous = NULL;
+
+    while (current != NULL && strcmp(current->surname, surname) != 0) {
+        previous = current;
+        current = current->next;
+    }
+
+    if (current == NULL) {
+        printf("Osoba '%s' ne postoji.\n", surname);
+        return head;
+    }
+
+    previous->next = current->next;
+    free(current);
+    printf("Osoba '%s' izbrisana.\n", surname);
+
+    return head;
+}
+
+void freeList(Osoba* head) {
+    Osoba* current = head;
+    Osoba* temp;
+
+    while (current != NULL) {
+        temp = current;
+        current = current->next;
+        free(temp);
+    }
+}
+
+void drugi_zad() {
+
+    Osoba* head = NULL;
+
+    head = addToBeginning(head, "Mate", "Car", 2005);
+    head = addToBeginning(head, "Grgur", "Ninski", 1465);
+
+    printList(head);
+
+    head = addToEnd(head, "Josip", "Horvat", 1997);
+
+    printList(head);
+
+    Osoba* found = findElement(head, "Ninski");
+    if (found != NULL) {
+        printf("Pronaden: %s %s\n", found->name, found->surname);
+    }
+
+    head = deleteElement(head, "Car");
+
+    printList(head);
+
+    freeList(head);
+
+}
+
+Osoba* addAfterElement(Osoba* head, char* targetSurname, char* name, char* surname, int yearOfB) {
+    Osoba* target = findElement(head, targetSurname);
+
+    if (target == NULL) {
+        printf("Osoba sa prezimenom '%s' ne postoji.\n", targetSurname);
+        return head;
+    }
+
+    Osoba* newOsoba = (Osoba*)malloc(sizeof(Osoba));
+    if (newOsoba == NULL) {
+        printf("Greska pri alokaciji memorije!\n");
+        return head;
+    }
+
+    strcpy(newOsoba->name, name);
+    strcpy(newOsoba->surname, surname);
+    newOsoba->yearOfB = yearOfB;
+    newOsoba->next = target->next;
+    target->next = newOsoba;
+
+    printf("Osoba dodana iza osobe '%s'\n", targetSurname);
+    return head;
+}
+
+Osoba* addBeforeElement(Osoba* head, char* targetSurname, char* name, char* surname, int yearOfB) {
+    if (head == NULL) {
+        printf("Lista je prazna.\n");
+        return head;
+    }
+
+    if (strcmp(head->surname, targetSurname) == 0) {
+        return addToBeginning(head, name, surname, yearOfB);
+    }
+
+    Osoba* current = head;
+    Osoba* previous = NULL;
+
+    while (current != NULL && strcmp(current->surname, targetSurname) != 0) {
+        previous = current;
+        current = current->next;
+    }
+
+    if (current == NULL) {
+        printf("Osoba sa prezimenom '%s' ne postoji.\n", targetSurname);
+        return head;
+    }
+
+    Osoba* newOsoba = (Osoba*)malloc(sizeof(Osoba));
+    if (newOsoba == NULL) {
+        printf("Greska pri alokaciji memorije!\n");
+        return head;
+    }
+
+    strcpy(newOsoba->name, name);
+    strcpy(newOsoba->surname, surname);
+    newOsoba->yearOfB = yearOfB;
+
+    previous->next = newOsoba;
+    newOsoba->next = current;
+
+    printf("Osoba dodana ispred osobe '%s'\n", targetSurname);
+    return head;
+}
+
+Osoba* sortList(Osoba* head) {
+    if (head == NULL) {
+        return NULL;
+    }
+
+    Osoba* i;
+    Osoba* j;
+
+    for (i = head; i->next != NULL; i = i->next) {
+        for (j = head; j->next != NULL; j = j->next) {
+            if (strcmp(j->surname, j->next->surname) > 0) {
+                char tempName[256];
+                char tempSurname[256];
+                int tempYear;
+
+                strcpy(tempName, j->name);
+                strcpy(j->name, j->next->name);
+                strcpy(j->next->name, tempName);
+
+                strcpy(tempSurname, j->surname);
+                strcpy(j->surname, j->next->surname);
+                strcpy(j->next->surname, tempSurname);
+
+                tempYear = j->yearOfB;
+                j->yearOfB = j->next->yearOfB;
+                j->next->yearOfB = tempYear;
+            }
+        }
+    }
+
+    return head;
+}
+
+void treci_zad() {
+    Osoba* head = NULL;
+
+    head = addToBeginning(head, "Mate", "Matic", 2000);
+    head = addToBeginning(head, "Stjepan", "Radic", 1871);
+    head = addToEnd(head, "Marko", "Erceg", 2001);
+
+    printf("Pocetna lista:\n");
+    printList(head);
+
+    head = addAfterElement(head, "Radic", "Marija", "Pirija", 2002);
+    printf("\nNakon dodavanja iza 'Radic':\n");
+    printList(head);
+
+    head = addBeforeElement(head, "Radic", "Marta", "Martic", 2003);
+    printf("\nNakon dodavanja ispred 'Radic':\n");
+    printList(head);
+
+    head = sortList(head);
+    printf("\nNakon sortiranja:\n");
+    printList(head);
+
+}
+
+
+int main() {
+    
+    //drugi_zad();
+    treci_zad();
+
+
+    return 0;
+}
