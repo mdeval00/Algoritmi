@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 typedef struct Node {
     int data;
@@ -17,19 +18,32 @@ int random_prioritet() {
     return rand() % 5 + 1;
 }
 
-Node* push(Node* top) {
+Node* push(Node* top, int* error) {
     Node* new_node = (Node*)malloc(sizeof(Node));
+    if (new_node == NULL) {
+        *error = 1;
+        return top;
+    }
+
     new_node->data = random_broj();
     new_node->next = top;
     printf("Push: %d\n", new_node->data);
+    *error = 0;
     return new_node;
 }
 
-Node* pop(Node* top) {
+Node* pop(Node* top, int* error) {
+    if (top == NULL) {
+        printf("Stog je prazan!\n");
+        *error = 0;
+        return NULL;
+    }
+
     Node* temp = top;
     printf("Pop: %d\n", top->data);
     top = top->next;
     free(temp);
+    *error = 0;
     return top;
 }
 
@@ -40,14 +54,19 @@ void free_stack(Node* stog) {
         free(temp);
     }
 }
-
-Node* enqueue(Node* front) {
+Node* enqueue(Node* front, int* error) {
     Node* new_node = (Node*)malloc(sizeof(Node));
+    if (new_node == NULL) {
+        *error = 1;
+        return front;
+    }
+
     new_node->data = random_broj();
     new_node->next = NULL;
     printf("Enqueue: %d\n", new_node->data);
 
     if (front == NULL) {
+        *error = 0;
         return new_node;
     }
 
@@ -57,13 +76,14 @@ Node* enqueue(Node* front) {
     }
 
     current->next = new_node;
-
+    *error = 0;
     return front;
 }
 
-Node* dequeue(Node* front) {
+Node* dequeue(Node* front, int* error) {
     if (front == NULL) {
         printf("Red je prazan!\n");
+        *error = 0;
         return NULL;
     }
 
@@ -71,12 +91,12 @@ Node* dequeue(Node* front) {
     printf("Dequeue: %d\n", temp->data);
 
     front = front->next;
-
     free(temp);
+    *error = 0;
     return front;
 }
 
-void printList(Node* head) {
+void print_list(Node* head) {
     Node* current = head;
     while (current != NULL) {
         printf("%d -> ", current->data);
@@ -85,85 +105,64 @@ void printList(Node* head) {
     printf("NULL\n");
 }
 
-void sesti_zad() {
-
-    srand(time(NULL));
-
-    printf("Primjer stoga\n\n");
-    Node* stog = NULL;
-
-    stog = push(stog);
-    stog = push(stog);
-    stog = push(stog);
-    printList(stog);
-
-    stog = pop(stog);
-    stog = pop(stog);
-    printList(stog);
-
-    printf("\nPrimjer reda\n\n");
-    Node* front = NULL;
-
-    front = enqueue(front);
-    front = enqueue(front);
-    front = enqueue(front);
-    printList(front);
-
-    front = dequeue(front);
-    front = dequeue(front);
-    printList(front);
-
-}
 typedef struct Stack {
     Node* top;
     int capacity;
     int size;
 } Stack;
 
-Stack* createStack(int capacity) {
+Stack* createStack(int capacity, int* error) {
     Stack* stack = (Stack*)malloc(sizeof(Stack));
     if (stack == NULL) {
-        printf("Greska pri alokaciji memorije\n");
-        exit(1);
+        *error = 1;
+        return NULL;
     }
     stack->top = NULL;
     stack->capacity = capacity;
     stack->size = 0;
+    *error = 0;
     return stack;
 }
 
-
-int push_7(Stack* stack) {
+Node* push_7(Stack* stack, int* error) {
     if (stack->size >= stack->capacity) {
         printf("Greska: Stog je pun\n");
-        return 0;
+        *error = 0;
+        return stack->top;
     }
 
     Node* new_node = (Node*)malloc(sizeof(Node));
+    if (new_node == NULL) {
+        *error = 1;
+        return stack->top;
+    }
+
     new_node->data = random_broj();
     new_node->next = stack->top;
     stack->top = new_node;
     stack->size++;
 
     printf("Push: %d (kapacitet stoga: %d/%d)\n", new_node->data, stack->size, stack->capacity);
-    return 1;
+    *error = 0;
+    return stack->top;
 }
 
-int pop_7(Stack* stack) {
+Node* pop_7(Stack* stack, int* error) {
     if (stack->size == 0) {
         printf("Greska: Stog je prazan\n");
-        return -1;
+        *error = 0;
+        return stack->top;
     }
 
     Node* temp = stack->top;
     int popped_value = temp->data;
-
     stack->top = stack->top->next;
     stack->size--;
 
     printf("Pop: %d (kapacitet stoga: %d/%d)\n", popped_value, stack->size, stack->capacity);
     free(temp);
-    return popped_value;
+    *error = 0;
+    return stack->top;
 }
 
 void printStack(Stack* stack) {
@@ -172,33 +171,115 @@ void printStack(Stack* stack) {
         return;
     }
 
-    printf("Sadrzaj stoga:\n", stack->size, stack->capacity);
+    printf("Sadrzaj stoga (%d/%d): ", stack->size, stack->capacity);
     Node* current = stack->top;
     while (current != NULL) {
         printf("%d ", current->data);
         current = current->next;
     }
-    printf("NULL\n");
+    printf("\n");
 }
 
 void freeStack2(Stack* stack) {
-    while (!(stack->size == 0)) {
-        pop_7(stack);
+    if (stack == NULL) return;
+
+    while (stack->top != NULL) {
+        Node* temp = stack->top;
+        stack->top = stack->top->next;
+        free(temp);
     }
     free(stack);
-    printf("Stog je izbrisan\n");
 }
 
-Node* enqueue_priority(Node* front) {
+void saveStackToFile(Stack* stack, const char* filename, int* error) {
+    FILE* file = fopen(filename, "w");
+    if (file == NULL) {
+        *error = 1;
+        return;
+    }
+
+    fprintf(file, "%d\n", stack->capacity);
+
+    Node* current = stack->top;
+    while (current != NULL) {
+        fprintf(file, "%d\n", current->data);
+        current = current->next;
+    }
+
+    fclose(file);
+    *error = 0;
+}
+
+Stack* loadStackFromFile(const char* filename, int* error) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        *error = 1;
+        return NULL;
+    }
+
+    int capacity;
+    if (fscanf(file, "%d", &capacity) != 1 || capacity <= 0) {
+        fclose(file);
+        *error = 1;
+        return NULL;
+    }
+
+    Stack* stack = createStack(capacity, error);
+    if (*error) {
+        fclose(file);
+        return NULL;
+    }
+
+    int value;
+    Node* last = NULL;
+    while (fscanf(file, "%d", &value) == 1) {
+        if (stack->size >= stack->capacity) {
+            break;
+        }
+
+        Node* new_node = (Node*)malloc(sizeof(Node));
+        if (new_node == NULL) {
+            *error = 1;
+            freeStack2(stack);
+            fclose(file);
+            return NULL;
+        }
+
+        new_node->data = value;
+        new_node->next = NULL;
+
+        if (stack->top == NULL) {
+            stack->top = new_node;
+        }
+        else {
+            last->next = new_node;
+        }
+        last = new_node;
+        stack->size++;
+    }
+
+    fclose(file);
+    *error = 0;
+    return stack;
+}
+
+
+Node* enqueue_priority(Node* front, int* error) {
     Node* new_node = (Node*)malloc(sizeof(Node));
+    if (new_node == NULL) {
+        *error = 1;
+        return front;
+    }
+
     new_node->data = random_broj();
     new_node->priority = random_prioritet();
     new_node->next = NULL;
 
-    printf("Enqueue: %d (%d)\n", new_node->data, new_node->priority);
+    printf("Enqueue: %d (prioritet: %d)\n", new_node->data, new_node->priority);
 
     if (front == NULL || new_node->priority < front->priority) {
         new_node->next = front;
+        *error = 0;
         return new_node;
     }
 
@@ -210,23 +291,27 @@ Node* enqueue_priority(Node* front) {
     new_node->next = current->next;
     current->next = new_node;
 
+    *error = 0;
     return front;
 }
 
-Node* dequeue_priority(Node* front) {
+Node* dequeue_priority(Node* front, int* error) {
     if (front == NULL) {
         printf("Red je prazan!\n");
+        *error = 0;
         return NULL;
     }
 
     Node* temp = front;
-    printf("Dequeue: %d (%d)\n", front->data, front->priority);
+    printf("Dequeue: %d (prioritet: %d)\n", front->data, front->priority);
 
     front = front->next;
     free(temp);
 
+    *error = 0;
     return front;
 }
+
 
 void print_priority_queue(Node* front) {
     if (front == NULL) {
@@ -240,83 +325,398 @@ void print_priority_queue(Node* front) {
         printf("%d(%d) ", current->data, current->priority);
         current = current->next;
     }
-    printf("NULL\n");
+    printf("\n");
 }
 
-void sedmi_zad() {
-
-
-    printf("A) Stog s kapacitetom\n\n");
-
-
-    int kapacitet;
-
-    printf("Unesite maksimalni kapacitet stoga: ");
-    scanf("%d", &kapacitet);
-
-    Stack* stog = createStack(kapacitet);
-
-    srand(time(NULL));
-
-    printf("\n");
-    for (int i = 0; i < kapacitet + 2; i++) {
-        push_7(stog);
-    }
-    printStack(stog);
-
-    printf("\n");
-    for (int i = 0; i < 3; i++) {
-        pop_7(stog);
-    }
-    printStack(stog);
-
-    printf("\n");
-    for (int i = 0; i < 2; i++) {
-        push_7(stog);
-    }
-    printStack(stog);
-
-    freeStack2(stog);
-
-    printf("\nB) red s prioritetom\n\n");
-
-    Node* front = NULL;
-
-    front = enqueue_priority(front);
-    front = enqueue_priority(front);
-    front = enqueue_priority(front);
-    front = enqueue_priority(front);
-    front = enqueue_priority(front);
-    front = enqueue_priority(front);
-    front = enqueue_priority(front);
-    front = enqueue_priority(front);
-    front = enqueue_priority(front);
-    front = enqueue_priority(front);
-
-    printf("\n\n");
-    print_priority_queue(front);
-
-    front = dequeue_priority(front);
-    front = dequeue_priority(front);
-    front = dequeue_priority(front);
-    front = dequeue_priority(front);
-    front = dequeue_priority(front);
-
-
-    printf("\n\n");
-    print_priority_queue(front);
-
+void freePriorityQueue(Node* front) {
     while (front != NULL) {
         Node* temp = front;
         front = front->next;
         free(temp);
     }
+}
 
+void saveQueueToFile(Node* front, const char* filename, int* error) {
+    FILE* file = fopen(filename, "w");
+    if (file == NULL) {
+        *error = 1;
+        return;
+    }
+
+    Node* current = front;
+    while (current != NULL) {
+        if (current->priority > 0) {
+            fprintf(file, "%d %d\n", current->data, current->priority);
+        }
+        else {
+            fprintf(file, "%d\n", current->data);
+        }
+        current = current->next;
+    }
+
+    fclose(file);
+    *error = 0;
+}
+
+Node* loadQueueFromFile(const char* filename, int is_priority, int* error) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        *error = 1;
+        return NULL;
+    }
+
+    Node* front = NULL;
+    int data, priority;
+
+    if (is_priority) {
+        while (fscanf(file, "%d %d", &data, &priority) == 2) {
+            Node* new_node = (Node*)malloc(sizeof(Node));
+            if (new_node == NULL) {
+                *error = 1;
+                freePriorityQueue(front);
+                fclose(file);
+                return NULL;
+            }
+
+            new_node->data = data;
+            new_node->priority = priority;
+            new_node->next = NULL;
+
+            if (front == NULL || new_node->priority < front->priority) {
+                new_node->next = front;
+                front = new_node;
+            }
+            else {
+                Node* current = front;
+                while (current->next != NULL && current->next->priority <= new_node->priority) {
+                    current = current->next;
+                }
+                new_node->next = current->next;
+                current->next = new_node;
+            }
+        }
+    }
+    else {
+        while (fscanf(file, "%d", &data) == 1) {
+            Node* new_node = (Node*)malloc(sizeof(Node));
+            if (new_node == NULL) {
+                *error = 1;
+                freePriorityQueue(front);
+                fclose(file);
+                return NULL;
+            }
+
+            new_node->next = NULL;
+
+            if (front == NULL) {
+                front = new_node;
+            }
+            else {
+                Node* current = front;
+                while (current->next != NULL) {
+                    current = current->next;
+                }
+                current->next = new_node;
+            }
+        }
+    }
+
+    fclose(file);
+    *error = 0;
+    return front;
+}
+
+void stackMenu() {
+    Node* stog = NULL;
+    int error = 0;
+
+    printf("\nOSNOVNI STOG\n");
+
+    int choice;
+    do {
+        printf("\n1. Push\n");
+        printf("2. Pop\n");
+        printf("3. Prikazi stog\n");
+        printf("0. Izlaz\n");
+
+        if (scanf("%d", &choice) != 1) {
+            printf("Neispravan unos!\n");
+            while (getchar() != '\n');
+            continue;
+        }
+
+        switch (choice) {
+        case 1:
+            stog = push(stog, &error);
+            if (error) {
+                printf("Greska pri push operaciji!\n");
+                free_stack(stog);
+                return;
+            }
+            break;
+        case 2:
+            stog = pop(stog, &error);
+            break;
+        case 3:
+            print_list(stog);
+            break;
+        case 0:
+            printf("Izlaz iz menija za osnovni stog.\n");
+            break;
+        default:
+            printf("Neispravan izbor!\n");
+        }
+    } while (choice != 0);
+
+    free_stack(stog);
+}
+
+void queueMenu() {
+    Node* front = NULL;
+    int error = 0;
+
+    printf("\nOSNOVNI RED\n");
+
+    int choice;
+    do {
+        printf("\n1. Enqueue \n");
+        printf("2. Dequeue\n");
+        printf("3. Prikazi red\n");
+        printf("0. Izlaz\n");
+
+        if (scanf("%d", &choice) != 1) {
+            printf("Neispravan unos!\n");
+            while (getchar() != '\n');
+            continue;
+        }
+
+        switch (choice) {
+        case 1:
+            front = enqueue(front, &error);
+            if (error) {
+                printf("Greska pri enqueue operaciji!\n");
+                freePriorityQueue(front);
+                return;
+            }
+            break;
+        case 2:
+            front = dequeue(front, &error);
+            break;
+        case 3:
+            print_list(front);
+            break;
+        case 0:
+            printf("Izlaz iz menija za osnovni red.\n");
+            break;
+        default:
+            printf("Neispravan izbor!\n");
+        }
+    } while (choice != 0);
+
+    freePriorityQueue(front);
+}
+
+void stackMenu7() {
+    int error = 0;
+    Stack* stack = NULL;
+    int capacity;
+
+    printf("\nCIRKULARNI STOG\n");
+    printf("Unesite maksimalni kapacitet stoga: ");
+    if (scanf("%d", &capacity) != 1 || capacity <= 0) {
+        printf("Neispravan unos kapaciteta!\n");
+        return;
+    }
+
+    stack = createStack(capacity, &error);
+    if (error) {
+        printf("Greska pri kreiranju stoga!\n");
+        return;
+    }
+
+    int choice;
+    do {
+        printf("\n1. Push \n");
+        printf("2. Pop \n");
+        printf("3. Prikazi stog\n");
+        printf("4. Spremi stog u datoteku\n");
+        printf("5. Ucitaj stog iz datoteke\n");
+        printf("0. Izlaz\n");
+
+        if (scanf("%d", &choice) != 1) {
+            printf("Neispravan unos!\n");
+            while (getchar() != '\n');
+            continue;
+        }
+
+        switch (choice) {
+        case 1:
+            stack->top = push_7(stack, &error);
+            if (error) {
+                printf("Greska pri push operaciji!\n");
+                freeStack2(stack);
+                return;
+            }
+            break;
+        case 2:
+            stack->top = pop_7(stack, &error);
+            break;
+        case 3:
+            printStack(stack);
+            break;
+        case 4: {
+            char filename[100];
+            printf("Unesite ime datoteke: ");
+            scanf("%s", filename);
+            saveStackToFile(stack, filename, &error);
+            if (error) {
+                printf("Greska pri spremanju u datoteku!\n");
+            }
+            else {
+                printf("Stog uspjesno spremljen u datoteke.\n");
+            }
+            break;
+        }
+        case 5: {
+            char filename[100];
+            printf("Unesite ime datoteke: ");
+            scanf("%s", filename);
+            Stack* new_stack = loadStackFromFile(filename, &error);
+            if (error) {
+                printf("Greska pri ucitavanju iz datoteke!\n");
+            }
+            else {
+                freeStack2(stack);
+                stack = new_stack;
+                printf("Stog uspjesno ucitan iz datoteke.\n");
+            }
+            break;
+        }
+        case 0:
+            printf("Izlaz iz menija za stog.\n");
+            break;
+        default:
+            printf("Neispravan izbor!\n");
+        }
+    } while (choice != 0);
+
+    freeStack2(stack);
+}
+
+void queueMenu7() {
+    int error = 0;
+    Node* front = NULL;
+
+    printf("\nRED S PRIORITETOM");
+
+    int choice;
+    do {
+        printf("\n1. Enqueue\n");
+        printf("2. Dequeue\n");
+        printf("3. Prikazi red\n");
+        printf("4. Spremi red u datoteku\n");
+        printf("5. Ucitaj red iz datoteke\n");
+        printf("0. Izlaz\n");
+
+        if (scanf("%d", &choice) != 1) {
+            printf("Neispravan unos!\n");
+            while (getchar() != '\n');
+            continue;
+        }
+
+        switch (choice) {
+        case 1:
+            front = enqueue_priority(front, &error);
+            if (error) {
+                printf("Greska pri enqueue operaciji!\n");
+                freePriorityQueue(front);
+                return;
+            }
+            break;
+        case 2:
+            front = dequeue_priority(front, &error);
+            break;
+        case 3:
+            print_priority_queue(front);
+            break;
+        case 4: {
+            char filename[100];
+            printf("Unesite ime datoteke: ");
+            scanf("%s", filename);
+            saveQueueToFile(front, filename, &error);
+            if (error) {
+                printf("Greska pri spremanju u datoteku!\n");
+            }
+            else {
+                printf("Red uspjesno spremljen u datoteku.\n");
+            }
+            break;
+        }
+        case 5: {
+            char filename[100];
+            printf("Unesite ime datoteke: ");
+            scanf("%s", filename);
+            Node* new_front = loadQueueFromFile(filename, 1, &error);
+            if (error) {
+                printf("Greska pri ucitavanju iz datoteke!\n");
+            }
+            else {
+                freePriorityQueue(front);
+                front = new_front;
+                printf("Red uspjesno ucitan iz datoteke.\n");
+            }
+            break;
+        }
+        case 0:
+            printf("Izlaz iz menija za red.\n");
+            break;
+        default:
+            printf("Neispravan izbor!\n");
+        }
+    } while (choice != 0);
+
+    freePriorityQueue(front);
 }
 
 int main() {
+    srand(time(NULL));
 
-    //sesti_zad();
-    sedmi_zad();
+    int main_choice;
+
+    do {
+        printf("\nGLAVNI MENI\n");
+        printf("1. Osnovni stog\n");
+        printf("2. Osnovni red\n");
+        printf("3. Cirkularni stog\n");
+        printf("4. Red s prioritetom\n");
+        printf("0. Izlaz iz programa\n");
+
+        if (scanf("%d", &main_choice) != 1) {
+            printf("Neispravan unos!\n");
+            while (getchar() != '\n');
+            continue;
+        }
+
+        switch (main_choice) {
+        case 1:
+            stackMenu();
+            break;
+        case 2:
+            queueMenu();
+            break;
+        case 3:
+            stackMenu7();
+            break;
+        case 4:
+            queueMenu7();
+            break;
+        case 0:
+            printf("Izlaz iz programa.\n");
+            break;
+        default:
+            printf("Neispravan izbor!\n");
+        }
+    } while (main_choice != 0);
+
     return 0;
 }
