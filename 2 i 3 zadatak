@@ -3,26 +3,34 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-typedef struct Osoba{
+typedef struct Osoba {
     char name[256];
     char surname[256];
     int yearOfB;
     struct Osoba* next;
 } Osoba;
 
-Osoba* addToBeginning(Osoba* head, char* name, char* surname, int yearOfB) {
+Osoba* create_osoba(char* name, char* surname, int yearOfB, int* error) {
     Osoba* newOsoba = (Osoba*)malloc(sizeof(Osoba));
     if (newOsoba == NULL) {
-        printf("Greska pri alokaciji memorije!\n");
-        return head;
+        *error = 1;
+        return NULL;
     }
-
     strcpy(newOsoba->name, name);
     strcpy(newOsoba->surname, surname);
     newOsoba->yearOfB = yearOfB;
-    newOsoba->next = head;
+    newOsoba->next = NULL;
+    *error = 0;
+    return newOsoba;
+}
 
+Osoba* addToBeginning(Osoba* head, char* name, char* surname, int yearOfB, int* error) {
+    Osoba* newOsoba = create_osoba(name, surname, yearOfB, error);
+    if (*error) {
+        return head;
+    }
+    newOsoba->next = head;
+    *error = 0;
     return newOsoba;
 }
 
@@ -41,22 +49,17 @@ void printList(Osoba* head) {
         current = current->next;
         counter++;
     }
-    printf("\n\n");
+    printf("\n");
 }
 
-Osoba* addToEnd(Osoba* head, char* name, char* surname, int yearOfB) {
-    Osoba* newOsoba = (Osoba*)malloc(sizeof(Osoba));
-    if (newOsoba == NULL) {
-        printf("Greska pri alokaciji memorije!\n");
+Osoba* addToEnd(Osoba* head, char* name, char* surname, int yearOfB, int* error) {
+    Osoba* newOsoba = create_osoba(name, surname, yearOfB, error);
+    if (*error) {
         return head;
     }
 
-    strcpy(newOsoba->name, name);
-    strcpy(newOsoba->surname, surname);
-    newOsoba->yearOfB = yearOfB;
-    newOsoba->next = NULL;
-
     if (head == NULL) {
+        *error = 0;
         return newOsoba;
     }
 
@@ -66,25 +69,24 @@ Osoba* addToEnd(Osoba* head, char* name, char* surname, int yearOfB) {
     }
 
     current->next = newOsoba;
+    *error = 0;
     return head;
 }
 
 Osoba* findElement(Osoba* head, char* surname) {
     Osoba* current = head;
-
     while (current != NULL) {
         if (strcmp(current->surname, surname) == 0) {
             return current;
         }
         current = current->next;
     }
-
     return NULL;
 }
 
 Osoba* deleteElement(Osoba* head, char* surname) {
     if (head == NULL) {
-        printf("List je prazna.\n");
+        printf("Lista je prazna.\n");
         return NULL;
     }
 
@@ -111,14 +113,12 @@ Osoba* deleteElement(Osoba* head, char* surname) {
     previous->next = current->next;
     free(current);
     printf("Osoba '%s' izbrisana.\n", surname);
-
     return head;
 }
 
 void freeList(Osoba* head) {
     Osoba* current = head;
     Osoba* temp;
-
     while (current != NULL) {
         temp = current;
         current = current->next;
@@ -126,64 +126,36 @@ void freeList(Osoba* head) {
     }
 }
 
-void drugi_zad() {
-
-    Osoba* head = NULL;
-
-    head = addToBeginning(head, "Mate", "Car", 2005);
-    head = addToBeginning(head, "Grgur", "Ninski", 1465);
-
-    printList(head);
-
-    head = addToEnd(head, "Josip", "Horvat", 1997);
-
-    printList(head);
-
-    Osoba* found = findElement(head, "Ninski");
-    if (found != NULL) {
-        printf("Pronaden: %s %s\n", found->name, found->surname);
-    }
-
-    head = deleteElement(head, "Car");
-
-    printList(head);
-
-    freeList(head);
-
-}
-
-Osoba* addAfterElement(Osoba* head, char* targetSurname, char* name, char* surname, int yearOfB) {
+Osoba* addAfterElement(Osoba* head, char* targetSurname, char* name, char* surname, int yearOfB, int* error) {
     Osoba* target = findElement(head, targetSurname);
-
     if (target == NULL) {
         printf("Osoba sa prezimenom '%s' ne postoji.\n", targetSurname);
+        *error = 0;
         return head;
     }
 
-    Osoba* newOsoba = (Osoba*)malloc(sizeof(Osoba));
-    if (newOsoba == NULL) {
-        printf("Greska pri alokaciji memorije!\n");
+    Osoba* newOsoba = create_osoba(name, surname, yearOfB, error);
+    if (*error) {
         return head;
     }
 
-    strcpy(newOsoba->name, name);
-    strcpy(newOsoba->surname, surname);
-    newOsoba->yearOfB = yearOfB;
     newOsoba->next = target->next;
     target->next = newOsoba;
 
     printf("Osoba dodana iza osobe '%s'\n", targetSurname);
+    *error = 0;
     return head;
 }
 
-Osoba* addBeforeElement(Osoba* head, char* targetSurname, char* name, char* surname, int yearOfB) {
+Osoba* addBeforeElement(Osoba* head, char* targetSurname, char* name, char* surname, int yearOfB, int* error) {
     if (head == NULL) {
         printf("Lista je prazna.\n");
+        *error = 0;
         return head;
     }
 
     if (strcmp(head->surname, targetSurname) == 0) {
-        return addToBeginning(head, name, surname, yearOfB);
+        return addToBeginning(head, name, surname, yearOfB, error);
     }
 
     Osoba* current = head;
@@ -196,28 +168,26 @@ Osoba* addBeforeElement(Osoba* head, char* targetSurname, char* name, char* surn
 
     if (current == NULL) {
         printf("Osoba sa prezimenom '%s' ne postoji.\n", targetSurname);
+        *error = 0;
         return head;
     }
 
-    Osoba* newOsoba = (Osoba*)malloc(sizeof(Osoba));
-    if (newOsoba == NULL) {
-        printf("Greska pri alokaciji memorije!\n");
+    Osoba* newOsoba = create_osoba(name, surname, yearOfB, error);
+    if (*error) {
         return head;
     }
-
-    strcpy(newOsoba->name, name);
-    strcpy(newOsoba->surname, surname);
-    newOsoba->yearOfB = yearOfB;
 
     previous->next = newOsoba;
     newOsoba->next = current;
 
     printf("Osoba dodana ispred osobe '%s'\n", targetSurname);
+    *error = 0;
     return head;
 }
 
-Osoba* sortList(Osoba* head) {
+Osoba* sortList(Osoba* head, int* error) {
     if (head == NULL) {
+        *error = 0;
         return NULL;
     }
 
@@ -246,39 +216,258 @@ Osoba* sortList(Osoba* head) {
         }
     }
 
+    *error = 0;
     return head;
 }
 
-void treci_zad() {
-    Osoba* head = NULL;
+int writeListToFile(Osoba* head, const char* filename, int* error) {
+    FILE* file = fopen(filename, "w");
+    if (file == NULL) {
+        *error = 1;
+        return 0;
+    }
 
-    head = addToBeginning(head, "Mate", "Matic", 2000);
-    head = addToBeginning(head, "Stjepan", "Radic", 1871);
-    head = addToEnd(head, "Marko", "Erceg", 2001);
+    Osoba* current = head;
+    while (current != NULL) {
+        if (fprintf(file, "%s;%s;%d\n", current->name, current->surname, current->yearOfB) < 0) {
+            *error = 1;
+            fclose(file);
+            return 0;
+        }
+        current = current->next;
+    }
 
-    printf("Pocetna lista:\n");
-    printList(head);
+    if (ferror(file)) {
+        *error = 1;
+        fclose(file);
+        return 0;
+    }
 
-    head = addAfterElement(head, "Radic", "Marija", "Pirija", 2002);
-    printf("\nNakon dodavanja iza 'Radic':\n");
-    printList(head);
-
-    head = addBeforeElement(head, "Radic", "Marta", "Martic", 2003);
-    printf("\nNakon dodavanja ispred 'Radic':\n");
-    printList(head);
-
-    head = sortList(head);
-    printf("\nNakon sortiranja:\n");
-    printList(head);
-
+    fclose(file);
+    *error = 0;
+    return 1;
 }
 
+Osoba* readListFromFile(const char* filename, int* error) {
+    FILE* file = fopen(filename, "r");
+    if (file == NULL) {
+        *error = 1;
+        return NULL;
+    }
+
+    Osoba* head = NULL;
+    char line[1024];
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char name[256], surname[256];
+        int yearOfB;
+
+        if (sscanf(line, "%[^;];%[^;];%d", name, surname, &yearOfB) == 3) {
+            head = addToEnd(head, name, surname, yearOfB, error);
+            if (*error) {
+                fclose(file);
+                freeList(head);
+                return NULL;
+            }
+        }
+    }
+
+    if (ferror(file)) {
+        *error = 1;
+        fclose(file);
+        freeList(head);
+        return NULL;
+    }
+
+    fclose(file);
+    *error = 0;
+    return head;
+}
 
 int main() {
-    
-    //drugi_zad();
-    treci_zad();
+    Osoba* head = NULL;
+    int error = 0;
+    int choice;
 
+    do {
+        printf("\nGLAVNI MENI\n");
+        printf("1. Dodaj osobu na pocetak liste\n");
+        printf("2. Dodaj osobu na kraj liste\n");
+        printf("3. Ispisi listu\n");
+        printf("4. Pronadi osobu po prezimenu\n");
+        printf("5. Obrisi osobu po prezimenu\n");
+        printf("6. Dodaj osobu iza odredene osobe\n");
+        printf("7. Dodaj osobu ispred odredene osobe\n");
+        printf("8. Sortiraj listu po prezimenima\n");
+        printf("9. Spremi listu u datoteku\n");
+        printf("10. Ucitaj listu iz datoteke\n");
+        printf("0. Izlaz iz programa\n");
 
+        if (scanf("%d", &choice) != 1) {
+            printf("Neispravan unos!\n");
+            while (getchar() != '\n');
+            continue;
+        }
+
+        switch (choice) {
+        case 1: {
+            char name[256], surname[256];
+            int year;
+            printf("Unesite ime: ");
+            scanf("%s", name);
+            printf("Unesite prezime: ");
+            scanf("%s", surname);
+            printf("Unesite godinu rodenja: ");
+            if (scanf("%d", &year) != 1) {
+                printf("Neispravan unos godine!\n");
+                while (getchar() != '\n');
+                break;
+            }
+            head = addToBeginning(head, name, surname, year, &error);
+            if (error) {
+                printf("Greska pri alokaciji memorije!\n");
+                freeList(head);
+                return 1;
+            }
+            break;
+        }
+        case 2: {
+            char name[256], surname[256];
+            int year;
+            printf("Unesite ime: ");
+            scanf("%s", name);
+            printf("Unesite prezime: ");
+            scanf("%s", surname);
+            printf("Unesite godinu rodenja: ");
+            if (scanf("%d", &year) != 1) {
+                printf("Neispravan unos godine!\n");
+                while (getchar() != '\n');
+                break;
+            }
+            head = addToEnd(head, name, surname, year, &error);
+            if (error) {
+                printf("Greska pri alokaciji memorije!\n");
+                freeList(head);
+                return 1;
+            }
+            break;
+        }
+        case 3:
+            printList(head);
+            break;
+        case 4: {
+            char surname[256];
+            printf("Unesite prezime za pretragu: ");
+            scanf("%s", surname);
+            Osoba* found = findElement(head, surname);
+            if (found != NULL) {
+                printf("Pronadena osoba: %s %s, Godina rodenja: %d\n",
+                    found->name, found->surname, found->yearOfB);
+            }
+            else {
+                printf("Osoba sa prezimenom '%s' nije pronadena.\n", surname);
+            }
+            break;
+        }
+        case 5: {
+            char surname[256];
+            printf("Unesite prezime osobe za brisanje: ");
+            scanf("%s", surname);
+            head = deleteElement(head, surname);
+            break;
+        }
+        case 6: {
+            char targetSurname[256], name[256], surname[256];
+            int year;
+            printf("Unesite prezime osobe iza koje zelite dodati: ");
+            scanf("%s", targetSurname);
+            printf("Unesite ime nove osobe: ");
+            scanf("%s", name);
+            printf("Unesite prezime nove osobe: ");
+            scanf("%s", surname);
+            printf("Unesite godinu rodenja: ");
+            if (scanf("%d", &year) != 1) {
+                printf("Neispravan unos godine!\n");
+                while (getchar() != '\n');
+                break;
+            }
+            head = addAfterElement(head, targetSurname, name, surname, year, &error);
+            if (error) {
+                printf("Greska pri alokaciji memorije!\n");
+                freeList(head);
+                return 1;
+            }
+            break;
+        }
+        case 7: {
+            char targetSurname[256], name[256], surname[256];
+            int year;
+            printf("Unesite prezime osobe ispred koje zelite dodati: ");
+            scanf("%s", targetSurname);
+            printf("Unesite ime nove osobe: ");
+            scanf("%s", name);
+            printf("Unesite prezime nove osobe: ");
+            scanf("%s", surname);
+            printf("Unesite godinu rodenja: ");
+            if (scanf("%d", &year) != 1) {
+                printf("Neispravan unos godine!\n");
+                while (getchar() != '\n');
+                break;
+            }
+            head = addBeforeElement(head, targetSurname, name, surname, year, &error);
+            if (error) {
+                printf("Greska pri alokaciji memorije!\n");
+                freeList(head);
+                return 1;
+            }
+            break;
+        }
+        case 8:
+            head = sortList(head, &error);
+            if (error) {
+                printf("Greska pri sortiranju!\n");
+                freeList(head);
+                return 1;
+            }
+            printf("Lista sortirana po prezimenima.\n");
+            break;
+        case 9: {
+            char filename[256];
+            printf("Unesite ime datoteke za spremanje: ");
+            scanf("%s", filename);
+            if (writeListToFile(head, filename, &error)) {
+                printf("Lista uspjesno spremljena u datoteku '%s'.\n", filename);
+            }
+            else {
+                printf("Greska pri spremanju u datoteku!\n");
+                freeList(head);
+                return 1;
+            }
+            break;
+        }
+        case 10: {
+            char filename[256];
+            printf("Unesite ime datoteke za ucitavanje: ");
+            scanf("%s", filename);
+            Osoba* newHead = readListFromFile(filename, &error);
+            if (error) {
+                printf("Greska pri ucitavanju iz datoteke!\n");
+                freeList(head);
+                return 1;
+            }
+            freeList(head);
+            head = newHead;
+            printf("Lista uspjesno ucitana iz datoteke '%s'.\n", filename);
+            break;
+        }
+        case 0:
+            printf("Izlaz iz programa.\n");
+            break;
+        default:
+            printf("Neispravan izbor!\n");
+        }
+    } while (choice != 0);
+
+    freeList(head);
     return 0;
 }
