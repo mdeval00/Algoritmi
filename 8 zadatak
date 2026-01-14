@@ -8,94 +8,165 @@ typedef struct Node {
     struct Node* next;
 } Node;
 
-Node* push(Node* top, int value) {
+Node* create_node(int value, int* error) {
     Node* new_node = (Node*)malloc(sizeof(Node));
+    if (new_node == NULL) {
+        *error = 1;
+        return NULL;
+    }
     new_node->data = value;
-    new_node->next = top;
+    new_node->next = NULL;
+    *error = 0;
     return new_node;
 }
 
-Node* pop(Node* top, int* value) {
+Node* push(Node* top, int value, int* error) {
+    Node* new_node = create_node(value, error);
+    if (*error) {
+        return top;
+    }
+    new_node->next = top;
+    *error = 0;
+    return new_node;
+}
+
+Node* pop(Node* top, int* value, int* error) {
+    if (top == NULL) {
+        *error = 1;
+        return NULL;
+    }
     Node* temp = top;
     *value = top->data;
     top = top->next;
     free(temp);
+    *error = 0;
     return top;
 }
 
-int checkPostfix(const char* izraz, int* result) {
+void free_stack(Node* top) {
+    while (top != NULL) {
+        Node* temp = top;
+        top = top->next;
+        free(temp);
+    }
+}
+
+int checkPostfix(const char* izraz, int* result, int* error) {
     Node* stack = NULL;
     int i = 0;
 
     while (izraz[i] != '\0') {
-
         if (izraz[i] == ' ' || izraz[i] == '\t') {
             i++;
             continue;
         }
 
-
         if (isdigit(izraz[i])) {
             int number = 0;
-
             while (isdigit(izraz[i])) {
                 number = number * 10 + (izraz[i] - '0');
                 i++;
             }
-            stack = push(stack, number);
+            stack = push(stack, number, error);
+            if (*error) {
+                free_stack(stack);
+                return 0;
+            }
             continue;
         }
 
         if (izraz[i] == '+' || izraz[i] == '-' || izraz[i] == '*' || izraz[i] == '/') {
-            if (stack == NULL || stack->next == NULL) {
-                printf("Krivo postavljen izraz\n");
+            if (stack == NULL) {
+                printf("Greska: Nedovoljno operanada za operator '%c'\n", izraz[i]);
+                free_stack(stack);
                 return 0;
             }
 
-            int a, b;
-            stack = pop(stack, &b);
-            stack = pop(stack, &a);
-            int result;
+            int b;
+            stack = pop(stack, &b, error);
+            if (*error) {
+                free_stack(stack);
+                return 0;
+            }
 
+            if (stack == NULL) {
+                printf("Greska: Nedovoljno operanada za operator '%c'\n", izraz[i]);
+                free_stack(stack);
+                return 0;
+            }
+
+            int a;
+            stack = pop(stack, &a, error);
+            if (*error) {
+                free_stack(stack);
+                return 0;
+            }
+
+            int res;
             switch (izraz[i]) {
             case '+':
-                result = a + b;
+                res = a + b;
                 break;
             case '-':
-                result = a - b;
+                res = a - b;
                 break;
             case '*':
-                result = a * b;
+                res = a * b;
                 break;
             case '/':
                 if (b == 0) {
                     printf("Greska: dijeljenje s 0\n");
+                    free_stack(stack);
                     return 0;
                 }
-                result = a / b;
+                res = a / b;
                 break;
+            default:
+                printf("Nepodrzan operator: %c\n", izraz[i]);
+                free_stack(stack);
+                return 0;
             }
 
-            stack = push(stack, result);
+            stack = push(stack, res, error);
+            if (*error) {
+                free_stack(stack);
+                return 0;
+            }
             i++;
             continue;
         }
 
         printf("Nepodrzan znak: %c\n", izraz[i]);
+        free_stack(stack);
+        return 0;
+    }
+
+    if (stack == NULL) {
+        printf("Greska: Prazan izraz\n");
         return 0;
     }
 
     int finalResult;
-    stack = pop(stack, &finalResult);
+    stack = pop(stack, &finalResult, error);
+    if (*error) {
+        free_stack(stack);
+        return 0;
+    }
+
+    if (stack != NULL) {
+        printf("Greska: Previse elemenata na stogu - neispravan postfix izraz\n");
+        free_stack(stack);
+        return 0;
+    }
 
     *result = finalResult;
     return 1;
 }
 
-char* readFromFile(const char* filename) {
+char* readFromFile(const char* filename, int* error) {
     FILE* file = fopen(filename, "r");
     if (file == NULL) {
-        printf("Greska pri otvaranju datoteke\n");
+        *error = 1;
         return NULL;
     }
 
@@ -105,7 +176,7 @@ char* readFromFile(const char* filename) {
     char* izraz = (char*)malloc(capacity);
 
     if (izraz == NULL) {
-        printf("Greska pri alokaciji memorije\n");
+        *error = 1;
         fclose(file);
         return NULL;
     }
@@ -119,6 +190,12 @@ char* readFromFile(const char* filename) {
         if (size + buffer_len + 1 > capacity) {
             capacity = size + buffer_len + 1;
             char* new_izraz = (char*)realloc(izraz, capacity);
+            if (new_izraz == NULL) {
+                *error = 1;
+                free(izraz);
+                fclose(file);
+                return NULL;
+            }
             izraz = new_izraz;
         }
 
@@ -134,6 +211,7 @@ char* readFromFile(const char* filename) {
         izraz[size - 1] = '\0';
     }
 
+    *error = 0;
     return izraz;
 }
 
@@ -142,15 +220,17 @@ int main() {
     printf("Unesi ime datoteke: ");
     scanf("%s", filename);
 
-    char* izraz = readFromFile(filename);
-    if (izraz == NULL) {
+    int error = 0;
+    char* izraz = readFromFile(filename, &error);
+    if (error) {
+        printf("Greska pri otvaranju datoteke '%s'!\n", filename);
         return 1;
     }
 
     printf("Postfix izraz: %s\n", izraz);
 
     int result;
-    if (checkPostfix(izraz, &result)) {
+    if (checkPostfix(izraz, &result, &error)) {
         printf("Rezultat: %d\n", result);
     }
     else {
@@ -160,6 +240,5 @@ int main() {
     }
 
     free(izraz);
-
     return 0;
 }
